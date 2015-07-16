@@ -1109,6 +1109,9 @@ function IsWindows7SP1OrGreater : Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 function IsWindows8OrGreater: Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$EXTERNALSYM IsWindows8Point1OrGreater}
 function IsWindows8Point1OrGreater: Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IsWindows10OrGreater}
+function IsWindows10OrGreater : Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+
 {$EXTERNALSYM IsWindowsServer}
 function IsWindowsServer : Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 
