@@ -28,7 +28,9 @@ type
     osWinServer2012,    // Windows Server 2012
     osWin8,             // Windows 8
     osWinServer2012R2,  // Windows Server 2012 R2
-    osWin8Point1        // Windows 8.1
+    osWin8Point1,       // Windows 8.1
+    osWin10,            // Windows 10
+    osWinServer2016     //not released yet
   );
   TWin32NTType = (Unknown, NotApplicable, Workstation, Server, AdvancedServer);
   TWin32OSVersion = class(TObject)
@@ -140,23 +142,32 @@ begin
                   else
                     FOSType := osWinServer2008R2;
                 end;
-            2..$FFFFFFFF : begin
-                  if VersionHelpers.IsWindows8Point1OrGreater then begin
-                    FMajorVersion := 6;
-                    FMinorVersion := 3;
-                    if FProductType = VER_NT_WORKSTATION then
-                      FOSType := osWin8Point1
-                    else
-                      FOSType := osWinServer2012R2;
+            2..$FFFFFFFF :
+                begin
+                  if IsWindows10OrGreater then begin
+                    FMajorVersion := $A;
+                    FMinorVersion := 0;
+                    if IsWindowsServer then begin
+                      FOSType := osWin10;
+                    end else begin
+                      FOSType := osWinServer2016;
+                    end;
                   end else begin
-                    if FProductType = VER_NT_WORKSTATION then
-                      FOSType := osWin8
-                    else
-                      FOSType := osWinServer2012;
+                    if VersionHelpers.IsWindows8Point1OrGreater then begin
+                      FMajorVersion := 6;
+                      FMinorVersion := 3;
+                      if FProductType = VER_NT_WORKSTATION then
+                        FOSType := osWin8Point1
+                      else
+                        FOSType := osWinServer2012R2;
+                    end else begin
+                      if FProductType = VER_NT_WORKSTATION then
+                        FOSType := osWin8
+                      else
+                        FOSType := osWinServer2012;
+                    end;
                   end;
                 end;
-              end;
-            end;
           end;
         end;
         5 :
@@ -194,8 +205,10 @@ begin
           else
             FOSType := osWinNT3Workstation;
         end;
-  else
-    FOSType := osUnknown;
+      else
+        FOSType := osUnknown;
+      end;
+    end;
   end;
 end;
 
