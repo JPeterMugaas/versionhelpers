@@ -1022,12 +1022,55 @@ type
   {$EXTERNALSYM LPVOID}
   LPVOID = Pointer;
   {$ENDIF}
-  {$IFNDEF HAS_ULONGLONG}
   {$EXTERNALSYM DWORDLONG}
   DWORDLONG = QWord;
   {$EXTERNALSYM ULONGLONG}
   ULONGLONG = QWord;
-  {$ENDIF}
+  {$EXTERNALSYM _OSVERSIONINFOEXA}
+  _OSVERSIONINFOEXA = record
+    dwOSVersionInfoSize : DWORD;
+    dwMajorVersion : DWORD;
+    dwMinorVersion : DWORD;
+    dwBuildNumber : DWORD;
+    dwPlatformId : DWORD;
+    szCSDVersion : Array[0..127] of AnsiChar;
+    wServicePackMajor : WORD;
+    wServicePackMinor : WORD;
+    wSuiteMask : WORD;
+    wProductType : Byte;
+    wReserved : Byte;
+  end;
+  {$EXTERNALSYM OSVERSIONINFOEXA}
+  OSVERSIONINFOEXA = _OSVERSIONINFOEXA;
+  {$EXTERNALSYM TOSVersionInfoExA}
+  TOSVersionInfoExA = OSVERSIONINFOEXA;
+  {$EXTERNALSYM POSVERSIONINFOEXA}
+  POSVERSIONINFOEXA = ^OSVERSIONINFOEXA;
+  {$EXTERNALSYM LPOSVERSIONINFOEXA}
+  LPOSVERSIONINFOEXA = ^OSVERSIONINFOEXA;
+
+  {$EXTERNALSYM _OSVERSIONINFOEXW}
+  _OSVERSIONINFOEXW = record
+    dwOSVersionInfoSize : DWORD;
+    dwMajorVersion : DWORD;
+    dwMinorVersion : DWORD;
+    dwBuildNumber : DWORD;
+    dwPlatformId : DWORD;
+    szCSDVersion : Array[0..127] of WideChar;
+    wServicePackMajor : WORD;
+    wServicePackMinor : WORD;
+    wSuiteMask : WORD;
+    wProductType : Byte;
+    wReserved : Byte;
+  end;
+  {$EXTERNALSYM OSVERSIONINFOEXA}
+  OSVERSIONINFOEXW = _OSVERSIONINFOEXW;
+  {$EXTERNALSYM TOSVersionInfoExW}
+  TOSVersionInfoExW = OSVERSIONINFOEXW;
+  {$EXTERNALSYM POSVERSIONINFOEXW}
+  POSVERSIONINFOEXW = ^OSVERSIONINFOEXW;
+  {$EXTERNALSYM LPOSVERSIONINFOEXW}
+  LPOSVERSIONINFOEXW = ^OSVERSIONINFOEXW;
   {$EXTERNALSYM _SYSTEM_INFO}
   _SYSTEM_INFO = record
     case Integer of
@@ -1057,17 +1100,17 @@ type
     const dwSpMinorVersion : DWORD;
     var pdwReturnedProductType : DWORD) : BOOL stdcall;
   {$EXTERNALSYM LPFN_GetSystemInfo}
-  LPFN_GetSystemInfo = procedure(out lpSystemInfo :  _SYSTEM_INFO) stdcall;
+  LPFN_GetSystemInfo = procedure(out lpSystemInfo :  versionhelpers._SYSTEM_INFO) stdcall;
   {$EXTERNALSYM LPFN_GetNativeSystemInfo }
-  LPFN_GetNativeSystemInfo = procedure(out lpSystemInfo :  _SYSTEM_INFO) stdcall;
+  LPFN_GetNativeSystemInfo = procedure(out lpSystemInfo :  versionhelpers._SYSTEM_INFO) stdcall;
   {$EXTERNALSYM LPFN_VerifyVersionInfoW}
-  LPFN_VerifyVersionInfoW = function(var VersionInformation : OSVERSIONINFOEXW;
+  LPFN_VerifyVersionInfoW = function(var VersionInformation : versionhelpers.OSVERSIONINFOEXW;
     const dwTypeMask : DWORD;
-    const dwlConditionMask : DWORDLONG) : BOOL stdcall;
+    const dwlConditionMask : versionhelpers.DWORDLONG) : BOOL stdcall;
   {$EXTERNALSYM LPFN_VerSetConditionMask}
-  LPFN_VerSetConditionMask = function(const ConditionMask : ULONGLONG;
+  LPFN_VerSetConditionMask = function(const ConditionMask : versionhelpers.ULONGLONG;
    const TypeMask : DWORD;
-   const Condition : BYTE ) : ULONGLONG stdcall;
+   const Condition : BYTE ) : versionhelpers.ULONGLONG stdcall;
   {$EXTERNALSYM LPFN_IsWow64Process}
   LPFN_IsWow64Process = function(hProcess : THANDLE; out Wow64Process : BOOL) : BOOL stdcall;
 
@@ -1137,6 +1180,30 @@ const
   {$EXTERNALSYM VER_NUM_BITS_PER_CONDITION_MASK}
   VER_NUM_BITS_PER_CONDITION_MASK = 3;
 
+//
+// RtlVerifyVersionInfo() type mask bits
+//
+  {$EXTERNALSYM VER_MINORVERSION}
+  VER_MINORVERSION                = $0000001;
+  {$EXTERNALSYM VER_MAJORVERSION}
+  VER_MAJORVERSION                = $0000002;
+  {$EXTERNALSYM VER_BUILDNUMBER}
+  VER_BUILDNUMBER                 = $0000004;
+  {$EXTERNALSYM VER_PLATFORMID}
+  VER_PLATFORMID                  = $0000008;
+  {$EXTERNALSYM VER_SERVICEPACKMINOR}
+  VER_SERVICEPACKMINOR            = $0000010;
+  {$EXTERNALSYM VER_SERVICEPACKMAJOR}
+  VER_SERVICEPACKMAJOR            = $0000020;
+  {$EXTERNALSYM VER_SUITENAME}
+  VER_SUITENAME                   = $0000040;
+  {$EXTERNALSYM VER_PRODUCT_TYPE}
+  VER_PRODUCT_TYPE                = $0000080;
+
+//
+// RtlVerifyVersionInfo() os product type values
+//
+
   {$EXTERNALSYM  VER_NT_WORKSTATION}
   VER_NT_WORKSTATION              = $0000001;
   {$EXTERNALSYM  VER_NT_DOMAIN_CONTROLLER}
@@ -1170,6 +1237,7 @@ const
   PROCESSOR_ARCHITECTURE_UNKNOWN         = $FFFF;
 
   //ntdef.h
+
   {$EXTERNALSYM VER_SERVER_NT}
   VER_SERVER_NT                       = $80000000;
   {$EXTERNALSYM VER_WORKSTATION_NT}
@@ -1520,8 +1588,8 @@ function stub_GetProductInfo(const dwOSMajorVersion : DWORD;
 begin
   GetKernelHandle;
   GetProductInfo:= FixupStub( KernelDLL, 'GetProductInfo');
-  if Assigned(GetProductInfo) then begin
-    Result := GetProductInfo(dwOSMajorVersion,dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, pdwReturnedProductType);
+  if Assigned(versionhelpers.GetProductInfo) then begin
+    Result := versionhelpers.GetProductInfo(dwOSMajorVersion,dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, pdwReturnedProductType);
   end else begin
     GetProductInfo := stub_GetProductInfo;
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
@@ -1529,42 +1597,42 @@ begin
   end;
 end;
 
-procedure stub_GetSystemInfo(out lpSystemInfo :  _SYSTEM_INFO) stdcall;
+procedure stub_GetSystemInfo(out lpSystemInfo :  versionhelpers._SYSTEM_INFO) stdcall;
 begin
   GetKernelHandle;
-  GetNativeSystemInfo := FixupStub( KernelDLL, 'GetSystemInfo');
+  versionhelpers.GetNativeSystemInfo := FixupStub( KernelDLL, 'GetSystemInfo');
 
   if Assigned(GetNativeSystemInfo) then begin
-    GetNativeSystemInfo(lpSystemInfo);
+    versionhelpers.GetNativeSystemInfo(lpSystemInfo);
   end else begin
-    GetNativeSystemInfo := stub_GetSystemInfo;
+    versionhelpers.GetNativeSystemInfo := stub_GetSystemInfo;
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
   end;
 end;
 
-procedure stub_GetNativeSystemInfo(out lpSystemInfo :  _SYSTEM_INFO) stdcall;
+procedure stub_GetNativeSystemInfo(out lpSystemInfo :  versionhelpers._SYSTEM_INFO) stdcall;
 begin
   GetKernelHandle;
-  GetNativeSystemInfo := FixupStub( KernelDLL, 'GetNativeSystemInfo');
+  versionhelpers.GetNativeSystemInfo := FixupStub( KernelDLL, 'GetNativeSystemInfo');
 
-  if Assigned(GetNativeSystemInfo) then begin
-    GetNativeSystemInfo(lpSystemInfo);
+  if Assigned(versionhelpers.GetNativeSystemInfo) then begin
+    versionhelpers.GetNativeSystemInfo(lpSystemInfo);
   end else begin
-    GetNativeSystemInfo := stub_GetNativeSystemInfo;
+    versionhelpers.GetNativeSystemInfo := stub_GetNativeSystemInfo;
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
   end;
 end;
 
-function stub_VerifyVersionInfoW(var VersionInformation : OSVERSIONINFOEXW;
+function stub_VerifyVersionInfoW(var VersionInformation : versionhelpers.OSVERSIONINFOEXW;
     const dwTypeMask : DWORD;
-    const dwlConditionMask : DWORDLONG) : BOOL stdcall;
+    const dwlConditionMask : versionhelpers.DWORDLONG) : BOOL stdcall;
 begin
   GetKernelHandle;
-  VerifyVersionInfoW := FixupStub( KernelDLL, 'VerifyVersionInfoW');
-  if Assigned(VerifyVersionInfoW) then begin
-    Result := VerifyVersionInfoW(VersionInformation,dwTypeMask,dwlConditionMask);
+  versionhelpers.VerifyVersionInfoW := FixupStub( KernelDLL, 'VerifyVersionInfoW');
+  if Assigned(versionhelpers.VerifyVersionInfoW) then begin
+    Result := versionhelpers.VerifyVersionInfoW(VersionInformation,dwTypeMask,dwlConditionMask);
   end else begin
-    VerifyVersionInfoW := stub_VerifyVersionInfoW;
+    versionhelpers.VerifyVersionInfoW := stub_VerifyVersionInfoW;
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     Result := False;
   end;
@@ -1575,11 +1643,11 @@ function stub_VerSetConditionMask(const ConditionMask : ULONGLONG;
    const Condition : BYTE ) : ULONGLONG stdcall;
 begin
   GetKernelHandle;
-  @VerSetConditionMask :=  FixupStub( KernelDLL, 'VerSetConditionMask');
-  if Assigned(VerSetConditionMask) then begin
-    Result := VerSetConditionMask(ConditionMask,TypeMask, Condition);
+  @versionhelpers.VerSetConditionMask :=  FixupStub( KernelDLL, 'VerSetConditionMask');
+  if Assigned(versionhelpers.VerSetConditionMask) then begin
+    Result := versionhelpers.VerSetConditionMask(ConditionMask,TypeMask, Condition);
   end else begin
-    VerSetConditionMask := stub_VerSetConditionMask;
+    versionhelpers.VerSetConditionMask := stub_VerSetConditionMask;
 
 // For documentation sakes here's the old version of the macro that got
 // changed to call an API
@@ -1592,11 +1660,11 @@ end;
 function stub_IsWow64Process(hProcess : THANDLE; out Wow64Process : BOOL) : BOOL stdcall;
 begin
   GetKernelHandle;
-  @IsWow64Process :=  FixupStub( KernelDLL, 'IsWow64Process');
-  if Assigned(IsWow64Process) then begin
-    Result :=  IsWow64Process(hProcess,Wow64Process);
+  @versionhelpers.IsWow64Process :=  FixupStub( KernelDLL, 'IsWow64Process');
+  if Assigned(versionhelpers.IsWow64Process) then begin
+    Result :=  versionhelpers.IsWow64Process(hProcess,Wow64Process);
   end else begin
-    IsWow64Process := stub_IsWow64Process;
+    versionhelpers.IsWow64Process := stub_IsWow64Process;
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     Result := False;
   end;
@@ -1606,109 +1674,121 @@ end;
 //initialize stubs
 procedure InitStuds;
 begin
-  GetSystemInfo := stub_GetSystemInfo;
-  GetNativeSystemInfo := stub_GetNativeSystemInfo;
-  VerifyVersionInfoW := stub_VerifyVersionInfoW;
-  VerSetConditionMask := stub_VerSetConditionMask;
-  IsWow64Process := stub_IsWow64Process;
-  GetProductInfo := stub_GetProductInfo;
+  versionhelpers.GetSystemInfo := stub_GetSystemInfo;
+  versionhelpers.GetNativeSystemInfo := stub_GetNativeSystemInfo;
+  versionhelpers.VerifyVersionInfoW := stub_VerifyVersionInfoW;
+  versionhelpers.VerSetConditionMask := stub_VerSetConditionMask;
+  versionhelpers.IsWow64Process := stub_IsWow64Process;
+  versionhelpers.GetProductInfo := stub_GetProductInfo;
 end;
 
 function IsWindowsVersionOrGreater(const wMajorVersion, wMinorVersion, wServicePackMajor : Word) : Boolean;
 var
-  osvi : TOSVERSIONINFOEXW;
-  dwlConditionMask : DWORDLONG;
+  osvi : versionhelpers.OSVERSIONINFOEXW;
+  dwlConditionMask : versionhelpers.DWORDLONG;
 begin
   FillChar(osvi,SizeOf(osvi),0);
   osvi.dwOSVersionInfoSize := SizeOf(osvi);
   dwlConditionMask :=
-    VerSetConditionMask(
-      VerSetConditionMask(
-        VerSetConditionMask(
-            0, VER_MAJORVERSION, VER_GREATER_EQUAL),
-      VER_MINORVERSION, VER_GREATER_EQUAL),
-    VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
+    versionhelpers.VerSetConditionMask(
+      versionhelpers.VerSetConditionMask(
+        versionhelpers.VerSetConditionMask(
+            0, versionhelpers.VER_MAJORVERSION, versionhelpers.VER_GREATER_EQUAL),
+      versionhelpers.VER_MINORVERSION, versionhelpers.VER_GREATER_EQUAL),
+    versionhelpers.VER_SERVICEPACKMAJOR, versionhelpers.VER_GREATER_EQUAL);
   osvi.dwMajorVersion := wMajorVersion;
   osvi.dwMinorVersion := wMinorVersion;
   osvi.wServicePackMajor := wServicePackMajor;
-  Result := VerifyVersionInfoW(osvi, VER_MAJORVERSION or VER_MINORVERSION or VER_SERVICEPACKMAJOR, dwlConditionMask) <> False;
+  Result := versionhelpers.VerifyVersionInfoW(osvi,
+    versionhelpers.VER_MAJORVERSION or versionhelpers.VER_MINORVERSION or versionhelpers.VER_SERVICEPACKMAJOR, dwlConditionMask) <> False;
 end;
 
 function IsWindowsXPOrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINXP), LOBYTE(_WIN32_WINNT_WINXP),0);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_WINXP),
+    LOBYTE(versionhelpers._WIN32_WINNT_WINXP),0);
 end;
 
 function IsWindowsXPSP1OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINXP), LOBYTE(_WIN32_WINNT_WINXP), 1);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_WINXP),
+    LOBYTE(versionhelpers._WIN32_WINNT_WINXP), 1);
 end;
 
 function IsWindowsXPSP2OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINXP), LOBYTE(_WIN32_WINNT_WINXP), 2);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_WINXP),
+    LOBYTE(versionhelpers._WIN32_WINNT_WINXP), 2);
 end;
 
 function IsWindowsXPSP3OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINXP), LOBYTE(_WIN32_WINNT_WINXP), 3);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINXP),
+    LOBYTE(versionhelpers._WIN32_WINNT_WINXP), 3);
 end;
 
 function IsWindowsVistaOrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_VISTA), LOBYTE(_WIN32_WINNT_VISTA), 0);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_VISTA),
+    LOBYTE(versionhelpers._WIN32_WINNT_VISTA), 0);
 end;
 
 function IsWindowsVistaSP1OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_VISTA), LOBYTE(_WIN32_WINNT_VISTA), 1);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_VISTA),
+    LOBYTE(versionhelpers._WIN32_WINNT_VISTA), 1);
 end;
 
 function IsWindowsVistaSP2OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_VISTA), LOBYTE(_WIN32_WINNT_VISTA), 2);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_VISTA),
+    LOBYTE(versionhelpers._WIN32_WINNT_VISTA), 2);
 end;
 
 function IsWindows7OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN7), LOBYTE(_WIN32_WINNT_WIN7), 0);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_WIN7),
+    LOBYTE(versionhelpers._WIN32_WINNT_WIN7), 0);
 end;
 
 function IsWindows7SP1OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN7), LOBYTE(_WIN32_WINNT_WIN7), 1);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN7), LOBYTE(_WIN32_WINNT_WIN7), 1);
 end;
 
 function IsWindows8OrGreater: Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN8), LOBYTE(_WIN32_WINNT_WIN8), 0);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN8), LOBYTE(_WIN32_WINNT_WIN8), 0);
 end;
 
 function IsWindows8Point1OrGreater: Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINBLUE), LOBYTE(_WIN32_WINNT_WINBLUE), 0);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_WINBLUE),
+    LOBYTE(versionhelpers._WIN32_WINNT_WINBLUE), 0);
 end;
 
 function IsWindowsThresholdOrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINTHRESHOLD), LOBYTE(_WIN32_WINNT_WINTHRESHOLD), 0);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_WINTHRESHOLD),
+    LOBYTE(versionhelpers._WIN32_WINNT_WINTHRESHOLD), 0);
 end;
 
 function IsWindows10OrGreater : Boolean;
 begin
-  Result := IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINTHRESHOLD), LOBYTE(_WIN32_WINNT_WINTHRESHOLD), 0);
+  Result := versionhelpers.IsWindowsVersionOrGreater(HIBYTE(versionhelpers._WIN32_WINNT_WINTHRESHOLD),
+    LOBYTE(versionhelpers._WIN32_WINNT_WINTHRESHOLD), 0);
 end;
 
 function IsWindowsServer : Boolean;
 var
-  osvi : OSVERSIONINFOEXW;
-  dwlConditionMask : DWORDLONG;
+  osvi : versionhelpers.OSVERSIONINFOEXW;
+  dwlConditionMask : versionhelpers.DWORDLONG;
 begin
   FillChar(osvi,SizeOf(osvi),0);
   osvi.dwOSVersionInfoSize := SizeOf(osvi);
-  osvi.wProductType := VER_NT_WORKSTATION;
-  dwlConditionMask := VerSetConditionMask( 0, VER_PRODUCT_TYPE, VER_EQUAL );
-  Result := not VerifyVersionInfoW(&osvi, VER_PRODUCT_TYPE, dwlConditionMask);
+  osvi.wProductType := versionhelpers.VER_NT_WORKSTATION;
+  dwlConditionMask := versionhelpers.VerSetConditionMask( 0, versionhelpers.VER_PRODUCT_TYPE, versionhelpers.VER_EQUAL );
+  Result := not versionhelpers.VerifyVersionInfoW(&osvi, versionhelpers.VER_PRODUCT_TYPE, dwlConditionMask);
 end;
 
 initialization
