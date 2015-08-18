@@ -1022,6 +1022,12 @@ type
   {$EXTERNALSYM LPVOID}
   LPVOID = Pointer;
   {$ENDIF}
+  {$IFDEF WIN64}
+  DWORD_PTR = QWord;
+  {$ENDIF}
+  {$IFDEF WIN32}
+  DOWRD_PTR = Cardinal;
+  {$ENDIF}
   {$EXTERNALSYM DWORDLONG}
   DWORDLONG = QWord;
   {$EXTERNALSYM ULONGLONG}
@@ -1788,7 +1794,7 @@ begin
   osvi.dwOSVersionInfoSize := SizeOf(osvi);
   osvi.wProductType := versionhelpers.VER_NT_WORKSTATION;
   dwlConditionMask := versionhelpers.VerSetConditionMask( 0, versionhelpers.VER_PRODUCT_TYPE, versionhelpers.VER_EQUAL );
-  Result := not versionhelpers.VerifyVersionInfoW(&osvi, versionhelpers.VER_PRODUCT_TYPE, dwlConditionMask);
+  Result := not versionhelpers.VerifyVersionInfoW(osvi, versionhelpers.VER_PRODUCT_TYPE, dwlConditionMask);
 end;
 
 initialization
